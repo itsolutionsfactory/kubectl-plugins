@@ -1,0 +1,24 @@
+#!/bin/bash
+set -euo pipefail
+
+TARGET_DIR=$HOME/bin
+SOURCE_DIR=$(realpath $(dirname $0))
+PLUGIN_FILE=kubectl-django
+TARGET_FILE=$TARGET_DIR/$PLUGIN_FILE
+
+RED='\033[0;31m'
+BRED='\033[1;31m'
+GREEN='\033[0;32m'
+BGREEN='\033[1;32m'
+NC='\033[0m' # No Color
+
+mkdir -p $TARGET_DIR
+ln -sf $SOURCE_DIR/$PLUGIN_FILE $TARGET_FILE
+
+echo -e "${GREEN}Installed $PLUGIN_FILE at ${BGREEN}$TARGET_FILE${NC}"
+
+if [[ ":$PATH:" == *":$TARGET_DIR:"* ]]; then
+  echo -e "${GREEN}Your path is correctly set.${NC}"
+else
+  echo -e "${RED}Your path is missing ${BRED}$TARGET_DIR${RED}, you might want to add it.${NC}"
+fi

@@ -1,0 +1,76 @@
+#!/bin/bash
+
+usage() {
+  echo "Exec into the django pod of the current namespace..."
+  echo -e "kubectl django [-b]\t ...using bash (default if no option)"
+  echo -e "kubectl django -s\t ...using sh"
+  echo -e "kubectl django -m\t ...using manage.py shell_plus"
+  echo -e "kubectl django -o\t ...using manage.py shell"
+  echo -e "kubectl django -d\t ...using manage.py dbshell or pgcli if present"
+  echo -e "\nRequires kubens for namespace selection"
+}
+
+POSITIONAL_ARGS=()
+COMMAND=(/bin/bash)
+FLAG=""
+echo -ne "|\r"
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    -b|--bash)
+      COMMAND=(/bin/bash)
+      shift # past argument
+      ;;
+    -s|--sh)
+      COMMAND=(/bin/sh)
+      shift # past argument
+      ;;
+    -m|--manage)
+      COMMAND=(./manage.py shell_plus)
+      shift # past argument
+      ;;
+    -o|--original-shell)
+      COMMAND=(./manage.py shell)
+      shift # past argument
+      ;;
+    -d|--db-shell)
+      FLAG='DB'
+      shift # past argument
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    -*)
+      echo "Unknown option $1"
+      usage
+      exit 1
+      ;;
+    *)
+      POSITIONAL_ARGS+=("$1") # save positional arg
+      shift # past argument
+      ;;
+  esac
+done
+
+echo -ne "/\r"
+set -- "${POSITIONAL_ARGS[@]}" # restore positional parameters
+
+if [ -z "${POSITIONAL_ARGS[*]}" ]; then
+  # default to django pod in current namespace
+  POD=$(kubectl get pods -o name | grep "django" | grep -Ev "celery|migrations" | head -1)
+else
+  POD=$POSITIONAL_ARGS
+fi
+
+echo -ne "-\r"
+if [ "$FLAG" = "DB" ]; then
+  # use pgcli if installed or fallback to dbshell
+  if kubectl exec -it $POD -- which pgcli > /dev/null 2>&1; then
+    COMMAND=(sh -c 'pgcli $(./manage.py sqldsn --quiet --style=uri)')
+  else
+    COMMAND=(./manage.py dbshell)
+  fi
+fi
+
+echo "Running ${COMMAND[*]} in $POD"
+kubectl exec -it $POD -- "${COMMAND[@]}"
