@@ -1,0 +1,11 @@
+#!/bin/bash
+
+POD="$1"
+if kubectl exec -it "$POD" -- test -x /bin/bash > /dev/null 2>&1; then
+  COMMAND="/bin/bash"
+else
+  COMMAND="/bin/sh"
+fi
+
+echo "Running $COMMAND in $POD"
+kubectl exec "$POD" -it -- $COMMAND

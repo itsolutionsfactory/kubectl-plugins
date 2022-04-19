@@ -3,7 +3,7 @@ set -euo pipefail
 
 TARGET_DIR=$HOME/bin
 SOURCE_DIR=$(realpath "$(dirname "$0")")
-PLUGIN_FILE=kubectl-django
+PLUGIN_FILE=kubectl-bash
 TARGET_FILE=$TARGET_DIR/$PLUGIN_FILE
 
 RED='\033[0;31m'
